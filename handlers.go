@@ -16,8 +16,8 @@ func createNewsHandler(c echo.Context) error {
 	}
 	news.ID = uuid.New()        // Generate a new UUID
 	news.CreatedAt = time.Now() // Set the created_at timestamp
-	if err := createNews(news); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Unable to create news"})
+	if err := createNews(db, news); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusCreated, news)
 }

@@ -1,14 +1,13 @@
-// db.go
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var (
@@ -18,9 +17,7 @@ var (
 	dbHost     string
 	dbPort     string
 )
-var db *sql.DB
 
-// Load from .env or from env itself
 func loadEnvVariables() error {
 	godotenv.Load()
 
@@ -32,27 +29,25 @@ func loadEnvVariables() error {
 	return nil
 }
 
-func setupDB() *sql.DB {
-	err := loadEnvVariables()
-	if err != nil {
-		log.Fatalf("Error loading env: %v", err)
+var db *gorm.DB
+
+func setupDB() {
+	env_err := loadEnvVariables()
+	if env_err != nil {
+		log.Fatalf("Error loading env: %v", env_err)
 	}
 
 	// Create connection string
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", dbUser, dbPassword, dbName, dbHost, dbPort)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		dbHost, dbUser, dbPassword, dbName, dbPort)
 
-	// Connect to DB
-	db, err = sql.Open("postgres", connStr)
+	// Connect to DB using GORM
+	var err error
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Error DB connection: %v", err)
-	}
-
-	// Check the DB connection
-	if err := db.Ping(); err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 
 	// Console log
 	log.Println("DB connection: success")
-	return db
 }

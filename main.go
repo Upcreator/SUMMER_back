@@ -9,8 +9,10 @@ import (
 
 func main() {
 	// Set up the DB connection
-	db = setupDB()
-	defer db.Close()
+	setupDB()
+
+	// Auto-migrate the schema
+	db.AutoMigrate(&User{}, &Election{}, &Question{}, &Vote{}, &TransitionApplication{}, &News{})
 
 	// Initialize Echo
 	e := echo.New()
