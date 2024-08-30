@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/Upcreator/SUMMER_back/internal/models"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func main() {
@@ -12,29 +14,25 @@ func main() {
 	setupDB()
 
 	// Auto-migrate the schema
-	db.AutoMigrate(&User{}, &Election{}, &Question{}, &Vote{}, &TransitionApplication{}, &News{})
+	db.AutoMigrate(&models.User{}, &models.Election{}, &models.Question{}, &models.Vote{}, &models.TransitionApplication{}, &models.News{})
 
-	// Initialize Echo
-	e := echo.New()
+	// Initialize Fiber
+	app := fiber.New()
 
 	// Middleware
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
-	// CORS configuration
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.PATCH},
-		AllowHeaders: []string{echo.HeaderContentType, echo.HeaderAuthorization},
+	app.Use(logger.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowMethods: "GET,POST,PUT,DELETE,PATCH",
 	}))
 
 	// Routes
-	e.GET("/api/news", getNewsHandler)           // Get all news
-	e.POST("/api/news", createNewsHandler)       // Create a new news item
-	e.GET("/api/news/:id", getNewsByIDHandler)   // Get a specific news item by ID
-	e.PUT("/api/news/:id", updateNewsHandler)    // Update a specific news item
-	e.DELETE("/api/news/:id", deleteNewsHandler) // Delete a specific news item
+	app.Get("/api/news", getNewsHandler)           // Get all news
+	app.Post("/api/news", createNewsHandler)       // Create a new news item
+	app.Get("/api/news/:id", getNewsByIDHandler)   // Get a specific news item by ID
+	app.Put("/api/news/:id", updateNewsHandler)    // Update a specific news item
+	app.Delete("/api/news/:id", deleteNewsHandler) // Delete a specific news item
 
 	// Start the server
-	log.Fatal(e.Start(":8080"))
+	log.Fatal(app.Listen(":8080"))
 }
