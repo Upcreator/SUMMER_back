@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/Upcreator/SUMMER_back/internal/crud"
 	"github.com/Upcreator/SUMMER_back/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -16,7 +17,7 @@ func createNewsHandler(c *fiber.Ctx) error {
 	}
 	news.ID = uuid.New()        // Generate UUID
 	news.CreatedAt = time.Now() // Set current timestamp
-	if err := createNews(db, news); err != nil {
+	if err := crud.CreateNews(db, news); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(fiber.StatusCreated).JSON(news)
@@ -24,7 +25,7 @@ func createNewsHandler(c *fiber.Ctx) error {
 
 // Handler to get all news items
 func getNewsHandler(c *fiber.Ctx) error {
-	newsItems, err := getNews()
+	newsItems, err := crud.GetNews(db)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to fetch news"})
 	}
@@ -37,7 +38,7 @@ func getNewsByIDHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID format"})
 	}
-	newsItem, err := getNewsByID(id)
+	newsItem, err := crud.GetNewsByID(db, id)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to fetch news"})
 	}
@@ -58,7 +59,7 @@ func updateNewsHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&updateData); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request payload"})
 	}
-	if err := updateNews(id, updateData.Name, updateData.Description, updateData.Type); err != nil {
+	if err := crud.UpdateNews(db, id, updateData.Name, updateData.Description, updateData.Type); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to update news"})
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -70,7 +71,7 @@ func deleteNewsHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid ID format"})
 	}
-	if err := deleteNews(id); err != nil {
+	if err := crud.DeleteNews(db, id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to delete news"})
 	}
 	return c.SendStatus(fiber.StatusNoContent)
