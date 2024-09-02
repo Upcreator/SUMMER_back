@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Upcreator/SUMMER_back/internal/models"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -64,4 +65,23 @@ func setupDB() {
 
 	// Console log
 	log.Println("DB connection: success")
+
+	// Call the auto-migrate function here
+	autoMigrateDB()
+}
+
+func autoMigrateDB() {
+	err := db.AutoMigrate(
+		&models.User{},
+		&models.Election{},
+		&models.Question{},
+		&models.Vote{},
+		&models.TransitionApplication{},
+		&models.News{},
+	)
+	if err != nil {
+		log.Fatalf("Error during auto migration: %v", err)
+	}
+
+	log.Println("Database auto migration: success")
 }

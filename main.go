@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	"github.com/Upcreator/SUMMER_back/internal/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -12,9 +11,6 @@ import (
 func main() {
 	// Set up the DB connection
 	setupDB()
-
-	// Auto-migrate the schema
-	db.AutoMigrate(&models.User{}, &models.Election{}, &models.Question{}, &models.Vote{}, &models.TransitionApplication{}, &models.News{})
 
 	// Initialize Fiber
 	app := fiber.New()
