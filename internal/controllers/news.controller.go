@@ -58,7 +58,7 @@ func FindNews(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": results.Error})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "results": len(news), "nwes": news})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "results": len(news), "news": news})
 }
 
 func UpdateNews(c *fiber.Ctx) error {

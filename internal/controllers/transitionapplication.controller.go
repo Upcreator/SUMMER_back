@@ -3,8 +3,6 @@ package controllers
 import (
 	"strconv"
 
-	"time"
-
 	"github.com/Upcreator/SUMMER_back/internal/initializers"
 	"github.com/Upcreator/SUMMER_back/internal/models"
 
@@ -24,12 +22,11 @@ func CreateTransitionApplication(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(errors)
 	}
 
-	now := time.Now()
 	newTransitionApplication := models.TransitionApplicationModel{
-		User:     payload.User,
-		Time:     payload.Time,
-		Type:     payload.Type,
-		CreateAt: now,
+		User:  payload.User,
+		Time:  payload.Time,
+		Car:   payload.Car,
+		Plate: payload.Plate,
 	}
 
 	result := initializers.DB.Create(&newTransitionApplication)
@@ -83,8 +80,11 @@ func UpdateTransitionApplication(c *fiber.Ctx) error {
 	if payload.Time != "" {
 		updates["time"] = payload.Time
 	}
-	if payload.Type != "" {
-		updates["type"] = payload.Type
+	if payload.Car != "" {
+		updates["car"] = payload.Car
+	}
+	if payload.Plate != "" {
+		updates["plate"] = payload.Plate
 	}
 
 	initializers.DB.Model(&transition_application).Updates(updates)
