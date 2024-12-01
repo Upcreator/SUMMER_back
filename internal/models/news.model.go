@@ -12,6 +12,7 @@ type NewsModel struct {
 	Title      string    `gorm:"varchar(100);uniqueIndex;not null" json:"title,omitempty"`
 	Content    string    `gorm:"not null" json:"content,omitempty"`
 	Visibility bool      `gorm:"default:false;not null" json:"visibility"`
+	Type       string    `gorm:"not null" json:"type,omitempty"`
 	CreatedAt  time.Time `gorm:"not null" json:"createdAt,omitempty"`
 	UpdatedAt  time.Time `gorm:"not null" json:"updatedAt,omitempty"`
 }
