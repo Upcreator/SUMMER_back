@@ -7,6 +7,7 @@ import (
 
 	"github.com/Upcreator/SUMMER_back/internal/initializers"
 	"github.com/Upcreator/SUMMER_back/internal/models"
+	"github.com/Upcreator/SUMMER_back/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -17,16 +18,8 @@ func VerifyPassword(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
-/*err = VerifyPassword(hashedPassword, password)
-if err != nil {
-	fmt.Println("Password does not match:", err)
-} else {
-	fmt.Println("Password matches!")
-}
-*/
-
 func CreateUser(c *fiber.Ctx) error {
-	var payload *models.CreateUpdateUserSchema
+	var payload *models.CreateUserSchema
 
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
@@ -35,10 +28,6 @@ func CreateUser(c *fiber.Ctx) error {
 	errors := models.ValidateStruct(payload)
 	if errors != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(errors)
-	}
-
-	if err := payload.HashPassword(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "fail", "message": "Ошибка хэширования пароля: " + err.Error()})
 	}
 
 	now := time.Now()
@@ -54,14 +43,14 @@ func CreateUser(c *fiber.Ctx) error {
 		Email:               payload.Email,
 		Role:                payload.Role,
 		Status:              payload.Status,
-		Password:            payload.Password,
+		Password:            utils.GeneratePassword(payload.Password),
 		CreatedAt:           now,
 		UpdatedAt:           now,
 	}
 
 	result := initializers.DB.Create(&newUser)
 
-	if result.Error != nil && strings.Contains(result.Error.Error(), "Duplicate key value violates unique") {
+	if result.Error != nil && strings.Contains(result.Error.Error(), "(SQLSTATE 23505)") {
 		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"status": "fail", "message": "Email already exists"})
 	} else if result.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": result.Error.Error()})
@@ -90,7 +79,7 @@ func FindUsers(c *fiber.Ctx) error {
 func UpdateUser(c *fiber.Ctx) error {
 	userId := c.Params("userId")
 
-	var payload *models.CreateUpdateUserSchema
+	var payload *models.UpdateUserSchema
 
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
@@ -103,10 +92,6 @@ func UpdateUser(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "No user with this Id exists"})
 		}
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
-	}
-
-	if err := payload.HashPassword(); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"status": "fail", "message": "Ошибка хэширования пароля: " + err.Error()})
 	}
 
 	updates := make(map[string]interface{})
@@ -141,7 +126,7 @@ func UpdateUser(c *fiber.Ctx) error {
 		updates["status"] = payload.Status
 	}
 	if payload.Password != "" {
-		updates["password"] = payload.Password
+		updates["password"] = utils.GeneratePassword(payload.Password)
 	}
 
 	updates["updated_at"] = time.Now()
