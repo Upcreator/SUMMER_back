@@ -29,6 +29,10 @@ func ConnectDB(config *Config) {
 	DB.AutoMigrate(
 		&models.NewsModel{},
 		&models.TransitionApplicationModel{},
+		&models.Election{},
+		&models.Vote{},
+		&models.Question{},
+		&models.User{},
 	)
 
 	log.Println("Connected Successfully to DB")

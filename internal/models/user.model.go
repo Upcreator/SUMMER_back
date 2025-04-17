@@ -23,7 +23,22 @@ type User struct {
 	UpdatedAt           time.Time `json:"updated_at"`
 }
 
-type CreateUpdateUserSchema struct {
+
+type CreateUserSchema struct {
+	FirstName           string `json:"first_name" validate:"required"`
+	LastName            string `json:"last_name" validate:"required"`
+	Surname             string `json:"surname"`
+	RegistrationAddress string `json:"registration_address,omitempty"`
+	ActualAddress       string `json:"actual_address,omitempty"`
+	NumberOfLand        string `json:"number_of_land,omitempty"`
+	GovNumberOfLand     string `json:"gov_number_of_land,omitempty"`
+	Email               string `json:"email" validate:"required,email"`
+	Role                string `json:"role" validate:"required"`
+	Status              string `json:"status" validate:"required"`
+	Password            string `json:"password" validate:"required"`
+}
+
+type UpdateUserSchema struct {
 	FirstName           string `json:"first_name" validate:"required"`
 	LastName            string `json:"last_name" validate:"required"`
 	Surname             string `json:"surname"`
