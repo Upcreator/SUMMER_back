@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"strconv"
 	"strings"
 	"time"
@@ -32,20 +33,11 @@ func CreateUser(c *fiber.Ctx) error {
 
 	now := time.Now()
 	newUser := models.User{
-		ID:                  uuid.New(),
-		FirstName:           payload.FirstName,
-		LastName:            payload.LastName,
-		Surname:             payload.Surname,
-		RegistrationAddress: payload.RegistrationAddress,
-		ActualAddress:       payload.ActualAddress,
-		NumberOfLand:        payload.NumberOfLand,
-		GovNumberOfLand:     payload.GovNumberOfLand,
-		Email:               payload.Email,
-		Role:                payload.Role,
-		Status:              payload.Status,
-		Password:            utils.GeneratePassword(payload.Password),
-		CreatedAt:           now,
-		UpdatedAt:           now,
+		ID:        uuid.New(),
+		Username:  payload.Username,
+		Password:  utils.GeneratePassword(payload.Password),
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
 	result := initializers.DB.Create(&newUser)
@@ -95,38 +87,11 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	updates := make(map[string]interface{})
-	if payload.FirstName != "" {
-		updates["first_name"] = payload.FirstName
-	}
-	if payload.LastName != "" {
-		updates["last_name"] = payload.LastName
-	}
-	if payload.Surname != "" {
-		updates["surname"] = payload.Surname
-	}
-	if payload.RegistrationAddress != "" {
-		updates["registration_address"] = payload.RegistrationAddress
-	}
-	if payload.ActualAddress != "" {
-		updates["actual_address"] = payload.ActualAddress
-	}
-	if payload.NumberOfLand != "" {
-		updates["number_of_land"] = payload.NumberOfLand
-	}
-	if payload.GovNumberOfLand != "" {
-		updates["gov_number_of_land"] = payload.GovNumberOfLand
-	}
 	if payload.Email != "" {
 		updates["email"] = payload.Email
 	}
-	if payload.Role != "" {
-		updates["role"] = payload.Role
-	}
-	if payload.Status != "" {
-		updates["status"] = payload.Status
-	}
-	if payload.Password != "" {
-		updates["password"] = utils.GeneratePassword(payload.Password)
+	if payload.FullName != "" {
+		updates["full_name"] = payload.FullName
 	}
 
 	updates["updated_at"] = time.Now()
@@ -163,4 +128,75 @@ func DeleteUser(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func LoginUser(c *fiber.Ctx) error {
+	var payload models.CreateUserSchema
+
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"status":  "fail",
+			"message": err.Error(),
+		})
+	}
+
+	var user models.User
+	result := initializers.DB.First(&user, "username = ?", payload.Username)
+	if result.Error != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  "fail",
+			"message": "Invalid email or password",
+		})
+	}
+
+	if !utils.ComparePassword(user.Password, payload.Password) {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  "fail",
+			"message": "Invalid email or password",
+		})
+	}
+
+	tokenLive := time.Hour * 24 * 30
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID.String(),
+		"exp": time.Now().Add(tokenLive).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(initializers.AppConfig.JwtSecret))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "fail",
+			"message": err.Error(),
+		})
+	}
+
+	c.Cookie(utils.NewCookie("token", tokenString, "", time.Now().Add(tokenLive)))
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": "success",
+		"token":  tokenString,
+	})
+}
+
+func LogoutUser(c *fiber.Ctx) error {
+	c.Cookie(utils.NewCookie("token", "", "", time.Now().Add(-time.Hour)))
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  "success",
+		"message": "Logged out successfully",
+	})
+}
+
+func GetUser(c *fiber.Ctx) error {
+	userId := c.Locals("userId")
+	var user models.User
+	result := initializers.DB.First(&user, "id = ?", userId)
+	if err := result.Error; err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{})
+	}
+
+	return c.JSON(fiber.Map{
+		"user": user,
+	})
 }

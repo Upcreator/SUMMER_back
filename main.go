@@ -1,10 +1,10 @@
 package main
 
 import (
-	"log"
-
 	"github.com/Upcreator/SUMMER_back/internal/controllers"
 	"github.com/Upcreator/SUMMER_back/internal/initializers"
+	"github.com/Upcreator/SUMMER_back/internal/middleware"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -26,8 +26,8 @@ func main() {
 	app.Mount("/api", micro)
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
-		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowOrigins:     initializers.AppConfig.FrontendUrl,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowMethods:     "GET, POST, PATCH, DELETE",
 		AllowCredentials: true,
 	}))
@@ -104,6 +104,14 @@ func main() {
 			"status":  "success",
 			"message": "Welcome to Golang, Fiber, and GORM",
 		})
+	})
+
+	micro.Route("/auth", func(router fiber.Router) {
+		router.Post("/register", controllers.CreateUser)
+		router.Post("/login", controllers.LoginUser)
+		router.Use(middleware.AuthMiddleware)
+		router.Get("/me", controllers.GetUser)
+		router.Post("/logout", controllers.LogoutUser)
 	})
 
 	log.Fatal(app.Listen(":8000"))
