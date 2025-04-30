@@ -89,8 +89,11 @@ func main() {
 
 	// Votes
 	micro.Route("/votes", func(router fiber.Router) {
-		router.Post("/", controllers.CreateVote)
+		router.Use(middleware.AuthMiddleware)
 		router.Get("/", controllers.FindVotes)
+		router.Post("/:voteId", controllers.UserVote)
+		router.Use(middleware.RoleRequired("admin"))
+		router.Post("/", controllers.CreateVote)
 	})
 	micro.Route("/votes/:voteId", func(router fiber.Router) {
 		router.Patch("/", controllers.UpdateVote)

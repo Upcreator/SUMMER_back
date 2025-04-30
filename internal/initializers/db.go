@@ -33,6 +33,8 @@ func ConnectDB(config *Config) {
 		&models.Vote{},
 		&models.Question{},
 		&models.User{},
+		&models.UserVotes{},
+		&models.VoteOption{},
 	)
 
 	log.Println("Connected Successfully to DB")
