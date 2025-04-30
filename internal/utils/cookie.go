@@ -24,7 +24,7 @@ func NewCookie(name string, value string, path string, expires time.Time) *fiber
 		Expires:  expires,
 		HTTPOnly: true,
 		Secure:   secure,
-		Domain:   "localhost",
+		Domain:   initializers.AppConfig.CookieDomain,
 		SameSite: "Lax",
 	}
 }

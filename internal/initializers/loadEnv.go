@@ -15,6 +15,7 @@ type Config struct {
 	JwtSecret      string `mapstructure:"JWT_SECRET"`
 	Stand          string `mapstructure:"STAND"`
 	FrontendUrl    string `mapstructure:"FRONTEND_URL"`
+	CookieDomain   string `mapstructure:"COOKIE_DOMAIN"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
@@ -30,5 +31,6 @@ func LoadConfig(path string) (config Config, err error) {
 	}
 
 	err = viper.Unmarshal(&config)
+	AppConfig = config
 	return config, err
 }

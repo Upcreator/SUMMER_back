@@ -4,11 +4,11 @@ import (
 	"github.com/Upcreator/SUMMER_back/internal/controllers"
 	"github.com/Upcreator/SUMMER_back/internal/initializers"
 	"github.com/Upcreator/SUMMER_back/internal/middleware"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func init() {
@@ -23,7 +23,6 @@ func main() {
 	app := fiber.New()
 	micro := fiber.New()
 
-	app.Mount("/api", micro)
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     initializers.AppConfig.FrontendUrl,
@@ -31,6 +30,7 @@ func main() {
 		AllowMethods:     "GET, POST, PATCH, DELETE",
 		AllowCredentials: true,
 	}))
+	app.Mount("/api", micro)
 
 	// News
 	micro.Route("/news", func(router fiber.Router) {
