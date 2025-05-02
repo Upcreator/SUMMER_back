@@ -45,13 +45,12 @@ func main() {
 
 	// Transition applications
 	micro.Route("/transition_applications", func(router fiber.Router) {
-		router.Post("/", controllers.CreateTransitionApplication)
+		router.Use(middleware.AuthMiddleware)
 		router.Get("/", controllers.FindTransitionApplications)
-	})
-	micro.Route("/transition_applications/:transitionApplicationId", func(router fiber.Router) {
-		router.Patch("/", controllers.UpdateTransitionApplication)
-		router.Get("/", controllers.FindTransitionApplicationById)
-		router.Delete("/", controllers.DeleteTransitionApplication)
+		router.Post("/", controllers.CreateTransitionApplication)
+		router.Patch("/:transitionApplicationId", controllers.UpdateTransitionApplication)
+		router.Get("/:transitionApplicationId", controllers.FindTransitionApplicationById)
+		router.Delete("/:transitionApplicationId", controllers.DeleteTransitionApplication)
 	})
 
 	// Questions
@@ -94,13 +93,9 @@ func main() {
 		router.Post("/:voteId", controllers.UserVote)
 		router.Use(middleware.RoleRequired("admin"))
 		router.Post("/", controllers.CreateVote)
+		router.Delete("/:voteId", controllers.DeleteVote)
+		router.Patch("/:voteId", controllers.UpdateVote)
 	})
-	micro.Route("/votes/:voteId", func(router fiber.Router) {
-		router.Patch("/", controllers.UpdateVote)
-		router.Get("/", controllers.FindVoteById)
-		router.Delete("/", controllers.DeleteVote)
-	})
-
 	// Healtchecker
 	micro.Get("/healthchecker", func(c *fiber.Ctx) error {
 		return c.Status(200).JSON(fiber.Map{

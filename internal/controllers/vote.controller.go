@@ -53,7 +53,10 @@ func FindVotes(c *fiber.Ctx) error {
 	offset := (intPage - 1) * intLimit
 
 	var votes []models.Vote
-	results := initializers.DB.Limit(intLimit).Offset(offset).Order("timestamp desc").Model(&models.Vote{}).Preload("Options").Find(&votes)
+	results := initializers.DB.Limit(intLimit).Offset(offset).Order("timestamp desc").Model(&models.Vote{}).Preload("Options", func(db *gorm.DB) *gorm.DB {
+		db = db.Order("id asc")
+		return db
+	}).Find(&votes)
 	if results.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": results.Error})
 	}
@@ -64,7 +67,7 @@ func FindVotes(c *fiber.Ctx) error {
 func UpdateVote(c *fiber.Ctx) error {
 	voteId := c.Params("voteId")
 
-	var payload *models.Vote
+	var payload models.Vote
 
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
@@ -79,18 +82,47 @@ func UpdateVote(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
 
+	voteUuid, err := uuid.Parse(voteId)
+	if err != nil {
+		return err
+	}
+
 	updates := make(map[string]interface{})
-	//if payload.ElectionID != uuid.Nil {
-	//	updates["election_id"] = payload.ElectionID
-	//}
-	//if payload.UserID != uuid.Nil {
-	//	updates["user_id"] = payload.UserID
-	//}
-	//if payload.Responses != nil {
-	//	updates["responses"] = payload.Responses
-	//}
+	if payload.Title != "" {
+		updates["title"] = payload.Title
+	}
 
 	initializers.DB.Model(&vote).Updates(updates)
+
+	forCreate := make([]models.VoteOption, 0, len(payload.Options))
+	forUpdate := make([]models.VoteOption, 0, len(payload.Options))
+	for _, option := range payload.Options {
+		if option.Id == 0 {
+			option.VoteId = voteUuid
+			forCreate = append(forCreate, option)
+			continue
+		}
+		if option.VoteId == voteUuid {
+			forUpdate = append(forUpdate, option)
+			continue
+		}
+	}
+
+	if len(forUpdate) > 0 {
+		if err := initializers.DB.Save(&forUpdate).Error; err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+		}
+	}
+	if len(forCreate) > 0 {
+		if err := initializers.DB.Create(&forCreate).Error; err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+		}
+	}
+
+	initializers.DB.Preload("Options", func(db *gorm.DB) *gorm.DB {
+		db = db.Order("id asc")
+		return db
+	}).Find(&vote)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"vote": vote}})
 }
@@ -121,7 +153,7 @@ func DeleteVote(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": result.Error})
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success"})
 }
 
 type VoteSchema struct {
