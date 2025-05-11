@@ -66,13 +66,12 @@ func main() {
 
 	// Users
 	micro.Route("/users", func(router fiber.Router) {
+		router.Use(middleware.AuthMiddleware, middleware.RoleRequired("admin"))
 		router.Post("/", controllers.CreateUser)
 		router.Get("/", controllers.FindUsers)
-	})
-	micro.Route("/users/:userId", func(router fiber.Router) {
-		router.Patch("/", controllers.UpdateUser)
-		router.Get("/", controllers.FindUserById)
-		router.Delete("/", controllers.DeleteUser)
+		router.Patch("/:userId", controllers.UpdateUser)
+		router.Get("/:userId", controllers.FindUserById)
+		router.Delete("/:userId", controllers.DeleteUser)
 	})
 
 	// Elections
@@ -92,6 +91,8 @@ func main() {
 		router.Get("/", controllers.FindVotes)
 		router.Post("/:voteId", controllers.UserVote)
 		router.Use(middleware.RoleRequired("admin"))
+		router.Get("/:voteId", controllers.FindVoteById)
+		router.Get("/:voteId/results", controllers.VoteResults)
 		router.Post("/", controllers.CreateVote)
 		router.Delete("/:voteId", controllers.DeleteVote)
 		router.Patch("/:voteId", controllers.UpdateVote)
@@ -105,7 +106,7 @@ func main() {
 	})
 
 	micro.Route("/auth", func(router fiber.Router) {
-		router.Post("/register", controllers.CreateUser)
+		router.Post("/register", controllers.RegisterUser)
 		router.Post("/login", controllers.LoginUser)
 		router.Use(middleware.AuthMiddleware)
 		router.Get("/me", controllers.GetUser)

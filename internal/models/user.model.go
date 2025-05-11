@@ -23,7 +23,16 @@ type CreateUserSchema struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type CreateUserAdminSchema struct {
+	Username string `json:"username" validate:"required"`
+	FullName string `json:"fullName"`
+	Email    string `json:"mail"`
+	Role     string `json:"role"`
+	Password string `json:"password" validate:"required"`
+}
+
 type UpdateUserSchema struct {
 	Email    string `gorm:"unique;not null" json:"mail"`
 	FullName string `gorm:"unique;not null" json:"fullName"`
+	Role     string `json:"role"`
 }

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"strconv"
 	"strings"
 	"time"
 
@@ -9,7 +8,6 @@ import (
 	"github.com/Upcreator/SUMMER_back/internal/models"
 	"github.com/Upcreator/SUMMER_back/internal/utils"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -19,7 +17,7 @@ func VerifyPassword(hashedPassword, password string) error {
 }
 
 func CreateUser(c *fiber.Ctx) error {
-	var payload *models.CreateUserSchema
+	var payload *models.CreateUserAdminSchema
 
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
@@ -32,9 +30,11 @@ func CreateUser(c *fiber.Ctx) error {
 
 	now := time.Now()
 	newUser := models.User{
-		ID:        uuid.New(),
 		Username:  payload.Username,
 		Password:  utils.GeneratePassword(payload.Password),
+		Email:     payload.Email,
+		FullName:  payload.FullName,
+		Role:      payload.Role,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -51,15 +51,9 @@ func CreateUser(c *fiber.Ctx) error {
 }
 
 func FindUsers(c *fiber.Ctx) error {
-	var page = c.Query("page", "1")
-	var limit = c.Query("limit", "10")
-
-	intPage, _ := strconv.Atoi(page)
-	intLimit, _ := strconv.Atoi(limit)
-	offset := (intPage - 1) * intLimit
 
 	var users []models.User
-	results := initializers.DB.Limit(intLimit).Offset(offset).Find(&users)
+	results := initializers.DB.Find(&users)
 	if results.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": results.Error})
 	}
@@ -91,6 +85,9 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 	if payload.FullName != "" {
 		updates["full_name"] = payload.FullName
+	}
+	if payload.Role != "" {
+		updates["role"] = payload.Role
 	}
 
 	updates["updated_at"] = time.Now()
@@ -126,5 +123,5 @@ func DeleteUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": result.Error})
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success"})
 }

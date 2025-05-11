@@ -6,6 +6,8 @@ import (
 	"github.com/Upcreator/SUMMER_back/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"strings"
 	"time"
 )
 
@@ -79,4 +81,36 @@ func GetUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"user": user,
 	})
+}
+
+func RegisterUser(c *fiber.Ctx) error {
+	var payload *models.CreateUserSchema
+
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+	}
+
+	errors := models.ValidateStruct(payload)
+	if errors != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(errors)
+	}
+
+	now := time.Now()
+	newUser := models.User{
+		ID:        uuid.New(),
+		Username:  payload.Username,
+		Password:  utils.GeneratePassword(payload.Password),
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	result := initializers.DB.Create(&newUser)
+
+	if result.Error != nil && strings.Contains(result.Error.Error(), "(SQLSTATE 23505)") {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"status": "fail", "message": "Email already exists"})
+	} else if result.Error != nil {
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": result.Error.Error()})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"status": "success", "data": fiber.Map{"user": newUser}})
 }

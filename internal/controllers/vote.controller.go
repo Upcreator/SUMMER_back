@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"strconv"
 	"time"
 )
 
@@ -45,15 +44,9 @@ func CreateVote(c *fiber.Ctx) error {
 }
 
 func FindVotes(c *fiber.Ctx) error {
-	var page = c.Query("page", "1")
-	var limit = c.Query("limit", "10")
-
-	intPage, _ := strconv.Atoi(page)
-	intLimit, _ := strconv.Atoi(limit)
-	offset := (intPage - 1) * intLimit
 
 	var votes []models.Vote
-	results := initializers.DB.Limit(intLimit).Offset(offset).Order("timestamp desc").Model(&models.Vote{}).Preload("Options", func(db *gorm.DB) *gorm.DB {
+	results := initializers.DB.Order("timestamp desc").Model(&models.Vote{}).Preload("Options", func(db *gorm.DB) *gorm.DB {
 		db = db.Order("id asc")
 		return db
 	}).Find(&votes)
@@ -131,7 +124,10 @@ func FindVoteById(c *fiber.Ctx) error {
 	voteId := c.Params("voteId")
 
 	var vote models.Vote
-	result := initializers.DB.First(&vote, "id = ?", voteId)
+	result := initializers.DB.Order("timestamp desc").Model(&models.Vote{}).Preload("Options", func(db *gorm.DB) *gorm.DB {
+		db = db.Order("id asc")
+		return db
+	}).First(&vote, "id = ?", voteId)
 	if err := result.Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "No vote with that Id exists"})
@@ -188,9 +184,28 @@ func UserVote(c *fiber.Ctx) error {
 
 	initializers.DB.Exec("UPDATE vote_options SET votes = votes + 1 WHERE id = ?", voteOption.Id)
 	initializers.DB.Create(&models.UserVotes{
-		UserId: userId,
-		VoteId: voteOption.VoteId,
+		UserId:  userId,
+		VoteId:  voteOption.VoteId,
+		VotedTo: voteOption.Label,
 	})
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "message": "voted successfully"})
+}
+
+func VoteResults(c *fiber.Ctx) error {
+	voteId := c.Params("voteId")
+
+	var vote models.Vote
+	result := initializers.DB.First(&vote, "id = ?", voteId)
+	if err := result.Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "No vote with that Id exists"})
+		}
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+	}
+
+	var userVotes []models.UserVotes
+	initializers.DB.Where("vote_id = ?", voteId).Preload("User").Find(&userVotes)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"user_votes": userVotes}})
 }
