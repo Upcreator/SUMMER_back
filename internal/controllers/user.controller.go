@@ -35,6 +35,7 @@ func CreateUser(c *fiber.Ctx) error {
 		Email:     payload.Email,
 		FullName:  payload.FullName,
 		Role:      payload.Role,
+		Region:    payload.Region,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -88,6 +89,9 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 	if payload.Role != "" {
 		updates["role"] = payload.Role
+	}
+	if payload.Region != "" {
+		updates["region"] = payload.Region
 	}
 
 	updates["updated_at"] = time.Now()

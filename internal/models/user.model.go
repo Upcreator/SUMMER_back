@@ -14,6 +14,7 @@ type User struct {
 	Password  string    `gorm:"not null" json:"-"`
 	Role      string    `gorm:"default:'user'" json:"role"`
 	Avatar    string    `gorm:"type:text" json:"avatar"`
+	Region    string    `gorm:"default: null" json:"region"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -29,10 +30,12 @@ type CreateUserAdminSchema struct {
 	Email    string `json:"mail"`
 	Role     string `json:"role"`
 	Password string `json:"password" validate:"required"`
+	Region   string `json:"region"`
 }
 
 type UpdateUserSchema struct {
 	Email    string `gorm:"unique;not null" json:"mail"`
 	FullName string `gorm:"unique;not null" json:"fullName"`
 	Role     string `json:"role"`
+	Region   string `json:"region"`
 }
