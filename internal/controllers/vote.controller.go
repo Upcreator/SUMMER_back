@@ -10,8 +10,9 @@ import (
 )
 
 type IncomingVote struct {
-	Title   string              `json:"title"`
-	Options []models.VoteOption `json:"options"`
+	Title       string              `json:"title"`
+	Options     []models.VoteOption `json:"options"`
+	Description string              `json:"description"`
 }
 
 func CreateVote(c *fiber.Ctx) error {
@@ -24,9 +25,10 @@ func CreateVote(c *fiber.Ctx) error {
 	uid, _ := uuid.Parse(userId)
 
 	vote := models.Vote{
-		UserID:    uid,
-		Title:     incoming.Title,
-		Timestamp: time.Now(),
+		UserID:      uid,
+		Title:       incoming.Title,
+		Description: incoming.Description,
+		Timestamp:   time.Now(),
 	}
 	result := initializers.DB.Create(&vote)
 
@@ -44,12 +46,24 @@ func CreateVote(c *fiber.Ctx) error {
 }
 
 func FindVotes(c *fiber.Ctx) error {
-
 	var votes []models.Vote
 	results := initializers.DB.Order("timestamp desc").Model(&models.Vote{}).Preload("Options", func(db *gorm.DB) *gorm.DB {
 		db = db.Order("id asc")
 		return db
-	}).Find(&votes)
+	}).Where("ended = ?", false).Find(&votes)
+	if results.Error != nil {
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": results.Error})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "results": len(votes), "votes": votes})
+}
+
+func FindEndedVotes(c *fiber.Ctx) error {
+	var votes []models.Vote
+	results := initializers.DB.Order("timestamp desc").Model(&models.Vote{}).Preload("Options", func(db *gorm.DB) *gorm.DB {
+		db = db.Order("id asc")
+		return db
+	}).Where("ended = ?", true).Find(&votes)
 	if results.Error != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "error", "message": results.Error})
 	}
@@ -83,6 +97,9 @@ func UpdateVote(c *fiber.Ctx) error {
 	updates := make(map[string]interface{})
 	if payload.Title != "" {
 		updates["title"] = payload.Title
+	}
+	if payload.Description != "" {
+		updates["description"] = payload.Description
 	}
 
 	initializers.DB.Model(&vote).Updates(updates)
@@ -208,4 +225,25 @@ func VoteResults(c *fiber.Ctx) error {
 	initializers.DB.Where("vote_id = ?", voteId).Preload("User").Find(&userVotes)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"user_votes": userVotes}})
+}
+
+func EndVote(c *fiber.Ctx) error {
+	voteId := c.Params("voteId")
+
+	var vote models.Vote
+	result := initializers.DB.First(&vote, "id = ?", voteId)
+	if err := result.Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "No vote with that Id exists"})
+		}
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
+	}
+	updates := make(map[string]interface{})
+	vote.Ended = !vote.Ended
+
+	updates["ended"] = vote.Ended
+
+	initializers.DB.Model(&vote).Updates(updates)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "success", "data": fiber.Map{"vote": vote}})
 }

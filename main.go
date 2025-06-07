@@ -91,11 +91,13 @@ func main() {
 		router.Get("/", controllers.FindVotes)
 		router.Post("/:voteId", controllers.UserVote)
 		router.Use(middleware.RoleRequired("admin"))
+		router.Get("/ended", controllers.FindEndedVotes)
 		router.Get("/:voteId", controllers.FindVoteById)
 		router.Get("/:voteId/results", controllers.VoteResults)
 		router.Post("/", controllers.CreateVote)
 		router.Delete("/:voteId", controllers.DeleteVote)
 		router.Patch("/:voteId", controllers.UpdateVote)
+		router.Post("/:voteId/end", controllers.EndVote)
 	})
 	// Healtchecker
 	micro.Get("/healthchecker", func(c *fiber.Ctx) error {
