@@ -27,7 +27,7 @@ func ConnectDB(config *Config) {
 
 	log.Println("Running Migrations")
 	DB.AutoMigrate(
-		&models.NewsModel{},
+		&models.News{},
 		&models.TransitionApplicationModel{},
 		&models.Election{},
 		&models.Vote{},

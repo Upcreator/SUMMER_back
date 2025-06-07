@@ -7,14 +7,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type NewsModel struct {
-	ID         uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"id,omitempty"`
-	Title      string    `gorm:"varchar(100);uniqueIndex;not null" json:"title,omitempty"`
-	Content    string    `gorm:"not null" json:"content,omitempty"`
-	Visibility bool      `gorm:"default:false;not null" json:"visibility"`
-	Type       string    `gorm:"not null" json:"type,omitempty"`
-	CreatedAt  time.Time `gorm:"not null" json:"createdAt,omitempty"`
-	UpdatedAt  time.Time `gorm:"not null" json:"updatedAt,omitempty"`
+type News struct {
+	ID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"id,omitempty"`
+	Title       string    `gorm:"varchar(100);index;not null" json:"title,omitempty"`
+	Description string    `gorm:"text;not null" json:"description,omitempty"`
+	Preview     string    `gorm:"text" json:"preview,omitempty"`
+	Content     string    `gorm:"not null" json:"content,omitempty"`
+	Visibility  string    `gorm:"default:false;not null" json:"visibility"`
+	CreatedAt   time.Time `gorm:"not null" json:"createdAt,omitempty"`
+	UpdatedAt   time.Time `gorm:"not null" json:"updatedAt,omitempty"`
 }
 
 var validate = validator.New()
@@ -41,13 +42,14 @@ func ValidateStruct[T any](payload T) []*ErrorResponse {
 }
 
 type CreateNewsSchema struct {
-	Title      string `json:"title" validate:"required"`
-	Content    string `json:"content" validate:"required"`
-	Visibility bool   `json:"visibility,omitempty"`
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	Content     string `json:"content" validate:"required"`
+	Visibility  string `json:"visibility,omitempty"`
 }
 
 type UpdateNewsSchema struct {
-	Title      string `json:"title" validate:"required"`
-	Content    string `json:"content" validate:"required"`
-	Visibility *bool  `json:"visibility,omitempty"`
+	Title      string  `json:"title" validate:"required"`
+	Content    string  `json:"content" validate:"required"`
+	Visibility *string `json:"visibility,omitempty"`
 }

@@ -4,11 +4,10 @@ import (
 	"github.com/Upcreator/SUMMER_back/internal/controllers"
 	"github.com/Upcreator/SUMMER_back/internal/initializers"
 	"github.com/Upcreator/SUMMER_back/internal/middleware"
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
-
-	"github.com/gofiber/fiber/v2"
 )
 
 func init() {
@@ -30,17 +29,17 @@ func main() {
 		AllowMethods:     "GET, POST, PATCH, DELETE",
 		AllowCredentials: true,
 	}))
-	app.Mount("/api", micro)
 
+	app.Mount("/api", micro)
+	app.Static("/uploads", "./uploads")
 	// News
 	micro.Route("/news", func(router fiber.Router) {
-		router.Post("/", controllers.CreateNews)
 		router.Get("/", controllers.FindNews)
-	})
-	micro.Route("/news/:newsId", func(router fiber.Router) {
-		router.Patch("", controllers.UpdateNews)
-		router.Get("", controllers.FindNewsById)
-		router.Delete("", controllers.DeleteNews)
+		router.Get("/:newsId", controllers.FindNewsById)
+		router.Use(middleware.AuthMiddleware, middleware.RoleRequired("admin"))
+		router.Post("/", controllers.CreateNews)
+		router.Patch("/:newsId", controllers.UpdateNews)
+		router.Delete("/:newsId", controllers.DeleteNews)
 	})
 
 	// Transition applications
