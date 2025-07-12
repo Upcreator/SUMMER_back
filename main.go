@@ -33,8 +33,10 @@ func main() {
 	app.Mount("/api", micro)
 	app.Static("/uploads", "./uploads")
 	// News
+
 	micro.Route("/news", func(router fiber.Router) {
 		router.Get("/", controllers.FindNews)
+		router.Get("/admin", middleware.AuthMiddleware, middleware.RoleRequired("admin"), controllers.FindAdminNews)
 		router.Get("/:newsId", controllers.FindNewsById)
 		router.Use(middleware.AuthMiddleware, middleware.RoleRequired("admin"))
 		router.Post("/", controllers.CreateNews)

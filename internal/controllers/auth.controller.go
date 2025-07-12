@@ -100,6 +100,9 @@ func RegisterUser(c *fiber.Ctx) error {
 		ID:        uuid.New(),
 		Username:  payload.Username,
 		Password:  utils.GeneratePassword(payload.Password),
+		Email:     payload.Email,
+		FullName:  payload.FullName,
+		Region:    payload.Region,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
